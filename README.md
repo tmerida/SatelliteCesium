@@ -28,7 +28,11 @@ Follow these steps to install and test the project:
 Once the project has been deployed locally you can select any satellite you want from the the dropdown on the top left of the page, this has all the active satellites
 I have implemented a system to store the data in the localstorage, because CelesTrak updates the data every 2 hours, and if you make many requests during those 2 hours where the data has not changed they can block your ip and return a 403 error. So to avoid this problem, I save the date of the first time the request is made and I save both the time and the response of the request in the localstorage, and every time the page is refreshed or the **onMounted()** function is called it will load the cached data from the localstorage. And in case two hours have already passed, the request will be called again to update the data again and also the date.
 
-Las funciones que realizan esto son:
-```javascript
-  loadCesium();
-  loadCachedData();
+The functions that do this system:
+   ```javascript
+     loadCesium();
+     loadCachedData();
+  ```
+![image](https://github.com/user-attachments/assets/9e9807fe-d62a-44c0-8da1-4bef272964a4)
+![image](https://github.com/user-attachments/assets/78a78ad2-5f6b-4445-96f6-c50961a1c546)
+
