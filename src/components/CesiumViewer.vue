@@ -59,6 +59,8 @@ onMounted(() => {
   fillData();
 });
 
+
+// This loads all the earth textures by CesiumJS
 async function loadCesium(){
   viewer.value = new Viewer('cesiumContainer', {
     terrain: Terrain.fromWorldTerrain(),
@@ -67,6 +69,7 @@ async function loadCesium(){
   });
 }
 
+// Loads time and data from LocalStorage if there is something there
 function loadCachedData() {
   const cachedTime = localStorage.getItem("lastFetchTime");
   const cachedResponse = localStorage.getItem("cacheData");
@@ -78,6 +81,8 @@ function loadCachedData() {
   }
 }
 
+// We have a condition to check if we have to use the cached data, if not the case, we call an axios request to CelesTrak
+// And we update the cached data and time of the localStorage.
 async function fetchCelesTrakData() {
   const currentTime = Date.now();
   const dateFetched = new Date(lastFetchTime.value);
@@ -105,6 +110,8 @@ async function fetchCelesTrakData() {
   }
 }
 
+
+//We iterate the TLE information, and we split them by name of the satellite and we create a map by the name of the satellite with them two lines
 function fillData(){
   const tleLines = cacheData.value.split("\n").filter(line => line.trim() !== "");
   for (let i = 0; i < tleLines.length; i += 3) {
@@ -117,11 +124,12 @@ function fillData(){
   }
 }
 
-
+//We watch the selectedOption of the dropdown and wait to change, when change it's value we call the next function
 watch(selectedOption, (newValue, oldValue) => {
   selectedSatellite(newValue, oldValue);
 });
 
+//In case we selected a satellite, we delete the last orbit (if there's any) and print the new one
 function selectedSatellite(option, oldValue) {
   if(satelliteMap.has(option)){
     var tleLine = satelliteMap.get(option);
@@ -134,20 +142,23 @@ function selectedSatellite(option, oldValue) {
   }
 }
 
+
+//Now here we print two entities, the whole orbit and the exact point where is the satellite from the last update
 function printOrbit(satelliteName, tleLine1, tleLine2){
   const start = new Date();
   const end = new Date(start.getTime() + 8 * 60 * 60 * 1000); // 8h orbit
 
-  const satrec = satellite.twoline2satrec(tleLine1, tleLine2);
+  const satrec = satellite.twoline2satrec(tleLine1, tleLine2); //It an object, which represents the satellite's orbital parameters in a 
+                                                              //format that Satellite.js can use for predicting the satellite's position and velocity over time
   const orbitPositions = [];
-  for (let time = start; time <= end; time = new Date(time.getTime() + 10000)) { // 10 secs
-    const gmst = satellite.gstime(time);
+  for (let time = start; time <= end; time = new Date(time.getTime() + 10000)) { // Save the positions of the satellite during the 8h for each 10secs
+    const gmst = satellite.gstime(time); //This calculates the Greenwich Mean Sidereal Time (GMST) at a specific Julian date
     const positionAndVelocity = satellite.propagate(satrec, time);
     const positionEci = positionAndVelocity.position;
 
     if (positionEci) {
-      const positionGd = satellite.eciToGeodetic(positionEci, gmst);
-      const longitude = satellite.degreesLong(positionGd.longitude);
+      const positionGd = satellite.eciToGeodetic(positionEci, gmst); //This function converts a position in ECI coordinates to geodetic coordinates (latitude, longitude, altitude)
+      const longitude = satellite.degreesLong(positionGd.longitude); //Converting radians to degrees
       const latitude = satellite.degreesLat(positionGd.latitude);
       const altitude = positionGd.height * 1000;
       orbitPositions.push(longitude, latitude, altitude);
@@ -159,7 +170,7 @@ function printOrbit(satelliteName, tleLine1, tleLine2){
 
 
   const positions = Cartesian3.fromDegreesArrayHeights(orbitPositions);
-  viewer.value.entities.add({
+  viewer.value.entities.add({ //Create a line with the positions(longitude, lattitude, height (above the earth surface))
     id: satelliteName,
     name: "8 hour Orbit of " +  satelliteName,
     polyline: {
@@ -188,7 +199,7 @@ function printOrbit(satelliteName, tleLine1, tleLine2){
     altitude_exact.value = positionGd.height * 1000;
     const position = Cartesian3.fromDegrees(longitude_exact.value, latitude_exact.value, altitude_exact.value);
 
-    viewer.value.entities.add({
+    viewer.value.entities.add({ //Create a dot with the positions(longitude, lattitude, height (above the earth surface))
       id: satelliteName + "_exact",
       name: "Exact Position of "+ satelliteName,
       position: position,
@@ -201,6 +212,7 @@ function printOrbit(satelliteName, tleLine1, tleLine2){
   }
 }
 
+//This function deletes the orbit lines and all the data I show on the page
 function deleteOrbit(satelliteName){
   removeEntityById(satelliteName);
   removeEntityById(satelliteName + "_exact");
@@ -216,7 +228,7 @@ function removeEntityById(entityId) {
   if (entity) {
     viewer.value.entities.remove(entity);
   } else {
-    console.log(`No entity found with ID ${entityId}`);
+    console.log("No entity found");
   }
 }
 
